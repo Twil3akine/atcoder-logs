@@ -45,13 +45,13 @@
 	function getStatusClass(status: number): string {
 		switch (status) {
 			case 3:
-				return 'bg-cyan-200 hover:bg-cyan-300'; // 解説済み（水色）
+				return 'bg-cyan-200 hover:bg-cyan-400'; // 解説済み（水色）
 			case 2:
-				return 'bg-green-200 hover:bg-green-300'; // AC（緑）
+				return 'bg-green-200 hover:bg-green-400'; // AC（緑）
 			case 1:
-				return 'bg-yellow-200 hover:bg-yellow-300'; // WA（黄）
+				return 'bg-yellow-200 hover:bg-yellow-400'; // WA（黄）
 			default:
-				return 'bg-white hover:bg-gray-100'; // 無提出（白）
+				return 'bg-white hover:bg-gray-200'; // 無提出（白）
 		}
 	}
 
@@ -179,7 +179,7 @@
 				</thead>
 				<tbody>
 					{#each filteredContestIds as contestId}
-						<tr class="hover:bg-gray-50">
+						<tr>
 							<td
 								class="sticky left-0 z-10 max-w-[60px] overflow-hidden border border-gray-300 bg-gray-50 px-4 py-3 text-lg font-semibold"
 							>
@@ -197,14 +197,14 @@
 								})}
 								{@const status = problem ? getProblemStatus(problem) : -1}
 								<td
-									class="h-12 max-w-[60px] min-w-[60px] overflow-hidden border border-gray-300 px-1 py-1 text-center"
+									class="h-12 max-w-[60px] min-w-[60px] overflow-hidden border border-gray-300 px-1 py-1 text-center transition-colors {getStatusClass(
+										status
+									)}"
 								>
 									{#if problem}
 										<a
 											href="/problems/{problem.id}"
-											class="flex h-full rounded px-1 py-1 transition-colors {getStatusClass(
-												status
-											)} hover:bg-opacity-80 items-center justify-start"
+											class="flex h-full w-full items-center justify-start px-1 py-1"
 											title={problem.title}
 										>
 											<div
