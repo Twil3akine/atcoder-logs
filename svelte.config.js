@@ -8,7 +8,11 @@ const config = {
 	preprocess: vitePreprocess(),
 
 	kit: {
-		adapter: adapter()
+		adapter: adapter({
+			pages: 'pages',
+			compatibilityDate: '2024-01-01',
+			compatibilityFlags: ['nodejs_compat']
+		})
 	}
 };
 

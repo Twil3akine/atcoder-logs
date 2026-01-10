@@ -2,6 +2,8 @@ name = "atcoder-logs"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
+pages_build_output_dir = ".svelte-kit/cloudflare"
+
 [assets]
 directory = ".svelte-kit/cloudflare"
 
@@ -9,7 +11,6 @@ directory = ".svelte-kit/cloudflare"
 binding = "atcoder_db"
 database_name = "atcoder-db"
 database_id = "8c0fb945-fd5a-4a87-bc18-402182c896c0"
-migrations_dir = "drizzle"
 
 [[kv_namespaces]]
 binding = "ATCODER_CACHE"
