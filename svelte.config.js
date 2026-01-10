@@ -9,7 +9,6 @@ const config = {
 
 	kit: {
 		adapter: adapter({
-			pages: 'pages',
 			compatibilityDate: '2024-01-01',
 			compatibilityFlags: ['nodejs_compat']
 		})
