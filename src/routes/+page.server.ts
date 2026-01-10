@@ -143,7 +143,6 @@ export const load: PageServerLoad = async ({ platform }) => {
 		const [allProblems, allNotes, userSubmissions] = await Promise.all([
 			db.select().from(problems),
 			db.select().from(myNotes),
-			// platformを渡すのを忘れずに！
 			getUserSubmissions('twil3', platform)
 		]);
 
@@ -159,6 +158,7 @@ export const load: PageServerLoad = async ({ platform }) => {
 			};
 		});
 
+		// Use a proper type for the accumulator
 		const problemsByContest = problemsWithNotes.reduce(
 			(acc, problem) => {
 				const contestId = problem.contestId;
@@ -171,14 +171,36 @@ export const load: PageServerLoad = async ({ platform }) => {
 			{} as Record<string, typeof problemsWithNotes>
 		);
 
+		const sortedContestIds = Object.keys(problemsByContest).sort((a, b) => {
+			const regex = /^([a-zA-Z]+)(\d+)$/;
+			const matchA = a.match(regex);
+			const matchB = b.match(regex);
+
+			if (matchA && matchB) {
+				const prefixA = matchA[1].toUpperCase();
+				const prefixB = matchB[1].toUpperCase();
+				const numA = parseInt(matchA[2], 10);
+				const numB = parseInt(matchB[2], 10);
+
+				if (prefixA !== prefixB) {
+					return prefixA.localeCompare(prefixB);
+				}
+				return numB - numA;
+			}
+			return b.localeCompare(a);
+		});
+
 		return {
-			problemsByContest
+			problemsByContest,
+			sortedContestIds, // Make sure to return this!
+			error: null
 		};
 
 	} catch (err) {
 		console.error('Database or API Error:', err);
 		return {
-			problemsByContest: {},
+			problemsByContest: {} as Record<string, any[]>, // Cast to satisfy type
+			sortedContestIds: [],
 			error: 'データの取得中にエラーが発生しました。'
 		};
 	}

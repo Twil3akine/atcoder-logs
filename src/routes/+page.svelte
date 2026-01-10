@@ -3,59 +3,49 @@
 
 	export let data: PageData;
 
-	// コンテストIDのリスト（降順：最新が上）
-	$: contestIds = Object.keys(data.problemsByContest).sort((a, b) => {
-		// ABC形式のコンテストIDを数値で比較（例: ABC439 > ABC001）
-		const aMatch = a.match(/(\d+)$/);
-		const bMatch = b.match(/(\d+)$/);
-		if (aMatch && bMatch) {
-			return parseInt(bMatch[1]) - parseInt(aMatch[1]); // 降順
-		}
-		return b.localeCompare(a); // 文字列として降順
-	});
+	// Use the sorted IDs from the server
+	$: contestIds = data.sortedContestIds || [];
 
-	// 各コンテストの問題を取得する関数
+	// 1. Fix the type issue by asserting the type or checking existence
 	function getProblemsForContest(contestId: string) {
+		// Safe access: if data.problemsByContest is null/undefined or empty, return []
+		if (!data.problemsByContest) return [];
 		return data.problemsByContest[contestId] || [];
 	}
 
-	// 問題IDから問題番号を抽出（例: "abc123_a" -> "a"）
 	function getProblemNumber(problemId: string, contestId: string): string {
 		const prefix = contestId.toLowerCase() + '_';
 		if (problemId.toLowerCase().startsWith(prefix)) {
 			return problemId.slice(prefix.length).toUpperCase();
 		}
-		// フォールバック: 問題IDの最後の部分を返す
 		const parts = problemId.split('_');
 		return parts[parts.length - 1].toUpperCase();
 	}
 
-	// 問題の状態を取得
-	// 0: 無提出（白）、1: AC以外（黄）、2: AC（緑）、3: 解説済み（水色）
-	function getProblemStatus(problem: (typeof data.problemsByContest)[string][number]): number {
-		// 解説済みが最優先
-		if (problem.note?.hasExplanation) return 3; // 解説済み（水色）
-		// 提出状況を確認
-		if (problem.submissionStatus === 'AC') return 2; // AC（緑）
-		if (problem.submissionStatus && problem.submissionStatus !== 'AC') return 1; // AC以外（黄）
-		return 0; // 無提出（白）
+	// Fix the type for the problem argument based on your data structure
+	// We can infer it from the return type of getProblemsForContest
+	type ProblemType = ReturnType<typeof getProblemsForContest>[number];
+
+	function getProblemStatus(problem: ProblemType): number {
+		if (problem.note?.hasExplanation) return 3;
+		if (problem.submissionStatus === 'AC') return 2;
+		if (problem.submissionStatus && problem.submissionStatus !== 'AC') return 1;
+		return 0;
 	}
 
-	// 状態に応じた背景色クラスを取得
 	function getStatusClass(status: number): string {
 		switch (status) {
 			case 3:
-				return 'bg-cyan-200 hover:bg-cyan-400'; // 解説済み（水色）
+				return 'bg-cyan-200 hover:bg-cyan-400';
 			case 2:
-				return 'bg-green-200 hover:bg-green-400'; // AC（緑）
+				return 'bg-green-200 hover:bg-green-400';
 			case 1:
-				return 'bg-yellow-200 hover:bg-yellow-400'; // WA（黄）
+				return 'bg-yellow-200 hover:bg-yellow-400';
 			default:
-				return 'bg-white hover:bg-gray-200'; // 無提出（白）
+				return 'bg-white hover:bg-gray-200';
 		}
 	}
 
-	// コンテストタイプでフィルタリング
 	type ContestType = 'ABC' | 'ARC' | 'AGC' | 'AHC' | 'Other';
 	let selectedType: ContestType = 'ABC';
 
@@ -68,7 +58,6 @@
 		return 'Other';
 	}
 
-	// フィルタリングされたコンテストIDのリスト
 	$: filteredContestIds = contestIds.filter((id) => {
 		return getContestType(id) === selectedType;
 	});
@@ -89,49 +78,17 @@
 			</div>
 		{/if}
 
-		<!-- フィルターボタン -->
 		<div class="mb-4 flex flex-wrap gap-2">
-			<button
-				onclick={() => (selectedType = 'ABC')}
-				class="rounded-lg px-4 py-2 text-base font-medium transition-colors {selectedType === 'ABC'
-					? 'bg-blue-500 text-white'
-					: 'bg-white text-gray-700 hover:bg-gray-100'}"
-			>
-				ABC
-			</button>
-			<button
-				onclick={() => (selectedType = 'ARC')}
-				class="rounded-lg px-4 py-2 text-base font-medium transition-colors {selectedType === 'ARC'
-					? 'bg-blue-500 text-white'
-					: 'bg-white text-gray-700 hover:bg-gray-100'}"
-			>
-				ARC
-			</button>
-			<button
-				onclick={() => (selectedType = 'AGC')}
-				class="rounded-lg px-4 py-2 text-base font-medium transition-colors {selectedType === 'AGC'
-					? 'bg-blue-500 text-white'
-					: 'bg-white text-gray-700 hover:bg-gray-100'}"
-			>
-				AGC
-			</button>
-			<button
-				onclick={() => (selectedType = 'AHC')}
-				class="rounded-lg px-4 py-2 text-base font-medium transition-colors {selectedType === 'AHC'
-					? 'bg-blue-500 text-white'
-					: 'bg-white text-gray-700 hover:bg-gray-100'}"
-			>
-				AHC
-			</button>
-			<button
-				onclick={() => (selectedType = 'Other')}
-				class="rounded-lg px-4 py-2 text-base font-medium transition-colors {selectedType ===
-				'Other'
-					? 'bg-blue-500 text-white'
-					: 'bg-white text-gray-700 hover:bg-gray-100'}"
-			>
-				Other
-			</button>
+			{#each ['ABC', 'ARC', 'AGC', 'AHC', 'Other'] as type}
+				<button
+					onclick={() => (selectedType = type as ContestType)}
+					class="rounded-lg px-4 py-2 text-base font-medium transition-colors {selectedType === type
+						? 'bg-blue-500 text-white'
+						: 'bg-white text-gray-700 hover:bg-gray-100'}"
+				>
+					{type}
+				</button>
+			{/each}
 		</div>
 
 		<div class="overflow-hidden rounded-lg bg-white shadow-lg">
@@ -140,41 +97,14 @@
 					<tr>
 						<th
 							class="sticky left-0 z-10 border border-gray-300 bg-gray-100 px-4 py-3 text-left text-lg font-bold"
+							>ID</th
 						>
-							ID
-						</th>
-						<th
-							class="max-w-[60px] min-w-[60px] border border-gray-300 bg-gray-100 px-1 py-2 text-center text-lg font-bold"
-							>A</th
-						>
-						<th
-							class="max-w-[60px] min-w-[60px] border border-gray-300 bg-gray-100 px-1 py-2 text-center text-lg font-bold"
-							>B</th
-						>
-						<th
-							class="max-w-[60px] min-w-[60px] border border-gray-300 bg-gray-100 px-1 py-2 text-center text-lg font-bold"
-							>C</th
-						>
-						<th
-							class="max-w-[60px] min-w-[60px] border border-gray-300 bg-gray-100 px-1 py-2 text-center text-lg font-bold"
-							>D</th
-						>
-						<th
-							class="max-w-[60px] min-w-[60px] border border-gray-300 bg-gray-100 px-1 py-2 text-center text-lg font-bold"
-							>E</th
-						>
-						<th
-							class="max-w-[60px] min-w-[60px] border border-gray-300 bg-gray-100 px-1 py-2 text-center text-lg font-bold"
-							>F</th
-						>
-						<th
-							class="max-w-[60px] min-w-[60px] border border-gray-300 bg-gray-100 px-1 py-2 text-center text-lg font-bold"
-							>G</th
-						>
-						<th
-							class="max-w-[60px] min-w-[60px] border border-gray-300 bg-gray-100 px-1 py-2 text-center text-lg font-bold"
-							>H/Ex</th
-						>
+						{#each ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H/Ex'] as label}
+							<th
+								class="max-w-[60px] min-w-[60px] border border-gray-300 bg-gray-100 px-1 py-2 text-center text-lg font-bold"
+								>{label}</th
+							>
+						{/each}
 					</tr>
 				</thead>
 				<tbody>
@@ -189,9 +119,7 @@
 								{@const problems = getProblemsForContest(contestId)}
 								{@const problem = problems.find((p) => {
 									const num = getProblemNumber(p.id, contestId);
-									// H/Ex列にはHとExの両方を表示
 									if (problemNum === 'H/Ex' && (num === 'H' || num === 'EX')) return true;
-									// その他の列は完全一致
 									if (problemNum !== 'H/Ex') return num === problemNum;
 									return false;
 								})}
