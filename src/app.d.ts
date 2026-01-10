@@ -9,9 +9,10 @@ declare global {
 		interface Platform {
 			env?: {
 				atcoder_db: D1Database;
+				ATCODER_CACHE: KVNamespace;
 			};
 		}
 	}
 }
 
-export {};
+export { };

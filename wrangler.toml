@@ -1,10 +1,15 @@
 name = "atcoder-garden"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = ".svelte-kit/cloudflare"
+# pages_build_output_dir = ".svelte-kit/cloudflare"
 
 [[d1_databases]]
 binding = "atcoder_db"
 database_name = "atcoder-db"
 database_id = "8c0fb945-fd5a-4a87-bc18-402182c896c0"
 migrations_dir = "drizzle"
+
+[[kv_namespaces]]
+binding = "ATCODER_CACHE"
+id = "0cf568d7550b4bc585fe63d6704f1629"
+preview_id = "ea67ce1a9420476da0109d81e1ea64ce"

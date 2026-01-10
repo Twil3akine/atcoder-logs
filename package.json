@@ -33,7 +33,7 @@
 	"private": true,
 	"scripts": {
 		"dev": "vite dev",
-		"dev:cf": "npm run build && wrangler pages dev .svelte-kit/cloudflare",
+		"dev:cf": "wrangler pages dev -- bun run dev",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",

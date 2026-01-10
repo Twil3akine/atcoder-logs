@@ -31,13 +31,13 @@
 	}
 
 	// 問題の状態を取得
-	// 0: 無提出（白）、1: WA（黄）、2: AC（緑）、3: 解説済み（水色）
+	// 0: 無提出（白）、1: AC以外（黄）、2: AC（緑）、3: 解説済み（水色）
 	function getProblemStatus(problem: (typeof data.problemsByContest)[string][number]): number {
 		// 解説済みが最優先
 		if (problem.note?.hasExplanation) return 3; // 解説済み（水色）
 		// 提出状況を確認
 		if (problem.submissionStatus === 'AC') return 2; // AC（緑）
-		if (problem.submissionStatus === 'WA' || problem.submissionStatus) return 1; // WA（黄）
+		if (problem.submissionStatus && problem.submissionStatus !== 'AC') return 1; // AC以外（黄）
 		return 0; // 無提出（白）
 	}
 
@@ -74,7 +74,7 @@
 	});
 </script>
 
-<div class="min-h-screen w-full bg-gray-100 p-2">
+<div class="min-h-screen w-full overflow-x-hidden bg-gray-100 p-2">
 	<div class="mx-auto w-9/10">
 		<h1 class="mb-6 text-4xl font-bold text-gray-900">Twil3akine's Logs</h1>
 
@@ -134,8 +134,8 @@
 			</button>
 		</div>
 
-		<div class="overflow-x-auto rounded-lg bg-white shadow-lg">
-			<table class="w-full border-collapse border border-gray-300 text-base">
+		<div class="overflow-hidden rounded-lg bg-white shadow-lg">
+			<table class="w-full max-w-full table-fixed border-collapse border border-gray-300 text-base">
 				<thead>
 					<tr>
 						<th
@@ -205,7 +205,9 @@
 										<a
 											href="/problems/{problem.id}"
 											class="flex h-full w-full items-center justify-start px-1 py-1"
-											title={problem.title}
+											title={problem.submissionStatus
+												? `${problem.title} - Status: ${problem.submissionStatus}`
+												: problem.title}
 										>
 											<div
 												class="truncate text-left text-base leading-none font-semibold whitespace-nowrap"
@@ -215,6 +217,11 @@
 											{#if problem.difficulty !== null}
 												<div class="text-left text-base leading-none font-medium text-gray-600">
 													{problem.difficulty}
+												</div>
+											{/if}
+											{#if problem.submissionStatus && problem.submissionStatus !== 'AC'}
+												<div class="text-left text-xs leading-none font-medium text-orange-600">
+													{problem.submissionStatus}
 												</div>
 											{/if}
 										</a>
