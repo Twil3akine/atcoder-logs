@@ -4,20 +4,72 @@ import { error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
+interface Submission {
+	result: string;
+	problem_id: string;
+}
+
+async function getUserSubmissions(username: string): Promise<Map<string, string>> {
+	try {
+		// 動作する例のタイムスタンプを使用（2019年6月9日）
+		const response = await fetch(
+			`https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions?user=${username}&from_second=0`,
+			{
+				headers: {
+					'User-Agent': 'Mozilla/5.0 (compatible; atcoder-garden/1.0)'
+				}
+			}
+		);
+		if (!response.ok) {
+			console.warn(`Failed to fetch submissions for ${username}: ${response.statusText}`);
+			return new Map();
+		}
+		const submissions: Submission[] = await response.json();
+
+		// problem_idをキーにして、ACを優先して保持
+		// ACがあればAC、なければWA、それもなければ最初の結果
+		const statusMap = new Map<string, string>();
+		for (const sub of submissions) {
+			const current = statusMap.get(sub.problem_id);
+			if (!current) {
+				statusMap.set(sub.problem_id, sub.result);
+			} else if (sub.result === 'AC') {
+				// ACが最優先
+				statusMap.set(sub.problem_id, 'AC');
+			} else if (current !== 'AC' && (sub.result === 'WA' || sub.result.startsWith('WA'))) {
+				// WAはACでない場合のみ更新
+				statusMap.set(sub.problem_id, 'WA');
+			}
+		}
+		return statusMap;
+	} catch (err) {
+		console.warn('Error fetching user submissions:', err);
+		return new Map();
+	}
+}
+
 export const load: PageServerLoad = async ({ platform }) => {
 	try {
 		const db = getDb(platform);
 		const allProblems = await db.select().from(problems);
 		const allNotes = await db.select().from(myNotes);
 
+		// twil3ユーザーの提出状況を取得
+		const userSubmissions = await getUserSubmissions('twil3');
+
 		// ノートをproblemIdでマップ
 		const notesMap = new Map(allNotes.map((note) => [note.problemId, note]));
 
-		// 問題にノート情報を追加
-		const problemsWithNotes = allProblems.map((problem) => ({
-			...problem,
-			note: notesMap.get(problem.id)
-		}));
+		// 問題にノート情報と提出状況を追加
+		const problemsWithNotes = allProblems.map((problem) => {
+			const submissionResult = userSubmissions.get(problem.id);
+			const note = notesMap.get(problem.id);
+			return {
+				...problem,
+				note,
+				submissionStatus: submissionResult || null // 'AC', 'WA', nullなど
+			};
+		});
 
 		// コンテストIDでグループ化
 		const problemsByContest = problemsWithNotes.reduce(
@@ -49,8 +101,7 @@ export const load: PageServerLoad = async ({ platform }) => {
 		}
 
 		return {
-			problemsByContest,
-			totalProblems: allProblems.length
+			problemsByContest
 		};
 	} catch (err) {
 		// 開発環境で platform が利用できない場合のフォールバック

@@ -30,129 +30,160 @@
 		return parts[parts.length - 1].toUpperCase();
 	}
 
-
-	// 問題の状態を取得（0: 未解答, 1: 解答済み, 2: 解説済み）
+	// 問題の状態を取得
+	// 0: 無提出（白）、1: WA（黄）、2: AC（緑）、3: 解説済み（水色）
 	function getProblemStatus(problem: (typeof data.problemsByContest)[string][number]): number {
-		if (!problem.note) return 0; // 未解答
-		if (problem.note.hasExplanation) return 2; // 解説済み
-		if (problem.note.hasSolution) return 1; // 解答済み
-		return 0;
+		// 解説済みが最優先
+		if (problem.note?.hasExplanation) return 3; // 解説済み（水色）
+		// 提出状況を確認
+		if (problem.submissionStatus === 'AC') return 2; // AC（緑）
+		if (problem.submissionStatus === 'WA' || problem.submissionStatus) return 1; // WA（黄）
+		return 0; // 無提出（白）
 	}
 
 	// 状態に応じた背景色クラスを取得
 	function getStatusClass(status: number): string {
 		switch (status) {
+			case 3:
+				return 'bg-cyan-200 hover:bg-cyan-300'; // 解説済み（水色）
 			case 2:
-				return 'bg-green-200 hover:bg-green-300'; // 解説済み（緑）
+				return 'bg-green-200 hover:bg-green-300'; // AC（緑）
 			case 1:
-				return 'bg-yellow-200 hover:bg-yellow-300'; // 解答済み（黄）
+				return 'bg-yellow-200 hover:bg-yellow-300'; // WA（黄）
 			default:
-				return 'bg-white hover:bg-gray-100'; // 未解答（白）
+				return 'bg-white hover:bg-gray-100'; // 無提出（白）
 		}
 	}
 
-	let isSeeding = false;
-	let seedMessage = '';
-	let filterContestId = '';
+	// コンテストタイプでフィルタリング
+	type ContestType = 'ABC' | 'ARC' | 'AGC' | 'AHC' | 'Other';
+	let selectedType: ContestType = 'ABC';
 
-	async function seedProblems() {
-		isSeeding = true;
-		seedMessage = 'データを取得中...';
-		try {
-			const response = await fetch('/api/seed', {
-				method: 'POST'
-			});
-			const result = await response.json();
-			if (result.success) {
-				seedMessage = `✅ ${result.count}件の問題を投入しました！ページをリロードしてください。`;
-				setTimeout(() => {
-					window.location.reload();
-				}, 2000);
-			} else {
-				seedMessage = `❌ エラー: ${result.error || '不明なエラー'}`;
-			}
-		} catch (error) {
-			seedMessage = `❌ エラー: ${error instanceof Error ? error.message : '不明なエラー'}`;
-		} finally {
-			isSeeding = false;
-		}
+	function getContestType(contestId: string): ContestType {
+		const upper = contestId.toUpperCase();
+		if (upper.startsWith('ABC')) return 'ABC';
+		if (upper.startsWith('ARC')) return 'ARC';
+		if (upper.startsWith('AGC')) return 'AGC';
+		if (upper.startsWith('AHC')) return 'AHC';
+		return 'Other';
 	}
 
-	// フィルタリングされたコンテストIDのリスト（降順を維持）
-	$: filteredContestIds = filterContestId
-		? contestIds.filter((id) => id.toLowerCase().includes(filterContestId.toLowerCase()))
-		: contestIds;
+	// フィルタリングされたコンテストIDのリスト
+	$: filteredContestIds = contestIds.filter((id) => {
+		return getContestType(id) === selectedType;
+	});
 </script>
 
-<div class="container mx-auto px-4 py-8">
-	<h1 class="text-3xl font-bold mb-6">AtCoder Problems Matrix</h1>
-	
-	{#if data.error}
-		<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-			<p class="text-yellow-800 font-medium">⚠️ {data.error}</p>
-			<p class="text-yellow-700 text-sm mt-2">
-				開発サーバーを起動するには、<code class="bg-yellow-100 px-2 py-1 rounded">bun run dev:cf</code> または <code class="bg-yellow-100 px-2 py-1 rounded">wrangler dev</code> を使用してください。
-			</p>
-		</div>
-	{/if}
+<div class="min-h-screen w-full bg-gray-100 p-2">
+	<div class="mx-auto w-9/10">
+		<h1 class="mb-6 text-4xl font-bold text-gray-900">Twil3akine's Logs</h1>
 
-	<div class="flex items-center justify-between mb-4 gap-4 flex-wrap">
-		<p class="text-gray-600">総問題数: {data.totalProblems}</p>
-		<div class="flex items-center gap-2">
-			<label for="contest-filter" class="text-sm text-gray-600">コンテストID: </label>
-			<input
-				id="contest-filter"
-				type="text"
-				bind:value={filterContestId}
-				placeholder="例: abc"
-				class="px-3 py-1 border border-gray-300 rounded text-sm"
-			/>
-		</div>
-	</div>
-
-	{#if data.totalProblems === 0}
-		<div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6 text-center">
-			<p class="text-blue-800 font-medium mb-4">データベースに問題データがありません</p>
-			<button
-				onclick={seedProblems}
-				disabled={isSeeding}
-				class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
-			>
-				{isSeeding ? '投入中...' : 'AtCoder Problems APIからデータを投入'}
-			</button>
-			{#if seedMessage}
-				<p class="mt-4 text-sm {seedMessage.includes('✅') ? 'text-green-700' : 'text-red-700'}">
-					{seedMessage}
+		{#if data.error}
+			<div class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+				<p class="text-lg font-medium text-yellow-800">⚠️ {data.error}</p>
+				<p class="mt-2 text-base text-yellow-700">
+					開発サーバーを起動するには、<code class="rounded bg-yellow-100 px-2 py-1"
+						>bun run dev:cf</code
+					> を使用してください。
 				</p>
-			{/if}
-		</div>
-	{/if}
+			</div>
+		{/if}
 
-	<div class="overflow-x-auto">
-		<div class="inline-block min-w-full">
-			<table class="min-w-full border-collapse border border-gray-300">
+		<!-- フィルターボタン -->
+		<div class="mb-4 flex flex-wrap gap-2">
+			<button
+				onclick={() => (selectedType = 'ABC')}
+				class="rounded-lg px-4 py-2 text-base font-medium transition-colors {selectedType === 'ABC'
+					? 'bg-blue-500 text-white'
+					: 'bg-white text-gray-700 hover:bg-gray-100'}"
+			>
+				ABC
+			</button>
+			<button
+				onclick={() => (selectedType = 'ARC')}
+				class="rounded-lg px-4 py-2 text-base font-medium transition-colors {selectedType === 'ARC'
+					? 'bg-blue-500 text-white'
+					: 'bg-white text-gray-700 hover:bg-gray-100'}"
+			>
+				ARC
+			</button>
+			<button
+				onclick={() => (selectedType = 'AGC')}
+				class="rounded-lg px-4 py-2 text-base font-medium transition-colors {selectedType === 'AGC'
+					? 'bg-blue-500 text-white'
+					: 'bg-white text-gray-700 hover:bg-gray-100'}"
+			>
+				AGC
+			</button>
+			<button
+				onclick={() => (selectedType = 'AHC')}
+				class="rounded-lg px-4 py-2 text-base font-medium transition-colors {selectedType === 'AHC'
+					? 'bg-blue-500 text-white'
+					: 'bg-white text-gray-700 hover:bg-gray-100'}"
+			>
+				AHC
+			</button>
+			<button
+				onclick={() => (selectedType = 'Other')}
+				class="rounded-lg px-4 py-2 text-base font-medium transition-colors {selectedType ===
+				'Other'
+					? 'bg-blue-500 text-white'
+					: 'bg-white text-gray-700 hover:bg-gray-100'}"
+			>
+				Other
+			</button>
+		</div>
+
+		<div class="overflow-x-auto rounded-lg bg-white shadow-lg">
+			<table class="w-full border-collapse border border-gray-300 text-base">
 				<thead>
 					<tr>
-						<th class="border border-gray-300 bg-gray-100 px-4 py-2 text-left sticky left-0 z-10">
-							コンテストID
+						<th
+							class="sticky left-0 z-10 border border-gray-300 bg-gray-100 px-4 py-3 text-left text-lg font-bold"
+						>
+							ID
 						</th>
-						<th class="border border-gray-300 bg-gray-100 px-3 py-2 text-center min-w-[80px]">A</th>
-						<th class="border border-gray-300 bg-gray-100 px-3 py-2 text-center min-w-[80px]">B</th>
-						<th class="border border-gray-300 bg-gray-100 px-3 py-2 text-center min-w-[80px]">C</th>
-						<th class="border border-gray-300 bg-gray-100 px-3 py-2 text-center min-w-[80px]">D</th>
-						<th class="border border-gray-300 bg-gray-100 px-3 py-2 text-center min-w-[80px]">E</th>
-						<th class="border border-gray-300 bg-gray-100 px-3 py-2 text-center min-w-[80px]">F</th>
-						<th class="border border-gray-300 bg-gray-100 px-3 py-2 text-center min-w-[80px]">G</th>
-						<th class="border border-gray-300 bg-gray-100 px-3 py-2 text-center min-w-[80px]">H/Ex</th>
+						<th
+							class="max-w-[60px] min-w-[60px] border border-gray-300 bg-gray-100 px-1 py-2 text-center text-lg font-bold"
+							>A</th
+						>
+						<th
+							class="max-w-[60px] min-w-[60px] border border-gray-300 bg-gray-100 px-1 py-2 text-center text-lg font-bold"
+							>B</th
+						>
+						<th
+							class="max-w-[60px] min-w-[60px] border border-gray-300 bg-gray-100 px-1 py-2 text-center text-lg font-bold"
+							>C</th
+						>
+						<th
+							class="max-w-[60px] min-w-[60px] border border-gray-300 bg-gray-100 px-1 py-2 text-center text-lg font-bold"
+							>D</th
+						>
+						<th
+							class="max-w-[60px] min-w-[60px] border border-gray-300 bg-gray-100 px-1 py-2 text-center text-lg font-bold"
+							>E</th
+						>
+						<th
+							class="max-w-[60px] min-w-[60px] border border-gray-300 bg-gray-100 px-1 py-2 text-center text-lg font-bold"
+							>F</th
+						>
+						<th
+							class="max-w-[60px] min-w-[60px] border border-gray-300 bg-gray-100 px-1 py-2 text-center text-lg font-bold"
+							>G</th
+						>
+						<th
+							class="max-w-[60px] min-w-[60px] border border-gray-300 bg-gray-100 px-1 py-2 text-center text-lg font-bold"
+							>H/Ex</th
+						>
 					</tr>
 				</thead>
 				<tbody>
 					{#each filteredContestIds as contestId}
 						<tr class="hover:bg-gray-50">
 							<td
-								class="border border-gray-300 px-4 py-2 font-medium bg-gray-50 sticky left-0 z-10"
+								class="sticky left-0 z-10 max-w-[60px] overflow-hidden border border-gray-300 bg-gray-50 px-4 py-3 text-lg font-semibold"
 							>
-								{contestId}
+								{contestId.toUpperCase()}
 							</td>
 							{#each ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H/Ex'] as problemNum}
 								{@const problems = getProblemsForContest(contestId)}
@@ -165,20 +196,30 @@
 									return false;
 								})}
 								{@const status = problem ? getProblemStatus(problem) : -1}
-								<td class="border border-gray-300 px-1 py-1 text-center min-w-[80px] h-16">
+								<td
+									class="h-12 max-w-[60px] min-w-[60px] overflow-hidden border border-gray-300 px-1 py-1 text-center"
+								>
 									{#if problem}
 										<a
 											href="/problems/{problem.id}"
-											class="block w-full h-full px-2 py-2 rounded transition-colors {getStatusClass(status)}"
-											title="{problem.title}"
+											class="flex h-full rounded px-1 py-1 transition-colors {getStatusClass(
+												status
+											)} hover:bg-opacity-80 items-center justify-start"
+											title={problem.title}
 										>
-											<div class="text-xs font-semibold mb-1 line-clamp-2 leading-tight">{problem.title}</div>
+											<div
+												class="truncate text-left text-base leading-none font-semibold whitespace-nowrap"
+											>
+												{problem.title}
+											</div>
 											{#if problem.difficulty !== null}
-												<div class="text-xs text-gray-600">{problem.difficulty}</div>
+												<div class="text-left text-base leading-none font-medium text-gray-600">
+													{problem.difficulty}
+												</div>
 											{/if}
 										</a>
 									{:else}
-										<div class="w-full h-full"></div>
+										<div class="h-full w-full"></div>
 									{/if}
 								</td>
 							{/each}
