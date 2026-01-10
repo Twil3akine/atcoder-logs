@@ -3,10 +3,7 @@ compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 pages_build_output_dir = ".svelte-kit/cloudflare"
-
-[site]
-bucket = ".svelte-kit/cloudflare"
-entry-point = "_worker.js"
+main = "_worker.js"
 
 [[d1_databases]]
 binding = "atcoder_db"
