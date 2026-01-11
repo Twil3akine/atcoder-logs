@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
+	import { base } from '$app/paths';
 	import { marked } from 'marked';
 	import katex from 'katex';
 	import 'katex/dist/katex.css';
@@ -53,7 +54,7 @@ $$`;
 	async function saveNote() {
 		const adminKey = localStorage.getItem('admin_key') || '';
 
-		const response = await fetch(`/api/problems/${data.problem.id}/note`, {
+		const response = await fetch(`${base}/api/problems/${data.problem.id}/note`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -79,7 +80,7 @@ $$`;
 		}
 
 		try {
-			const response = await fetch(`/api/problems/${data.problem.id}/note`, {
+			const response = await fetch(`${base}/api/problems/${data.problem.id}/note`, {
 				method: 'DELETE'
 			});
 
@@ -101,7 +102,7 @@ $$`;
 		const newStatus = !data.note?.hasSolution;
 		const adminKey = localStorage.getItem('admin_key') || '';
 
-		const response = await fetch(`/api/problems/${data.problem.id}/note`, {
+		const response = await fetch(`${base}/api/problems/${data.problem.id}/note`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -123,7 +124,7 @@ $$`;
 <div class="container mx-auto w-full max-w-[95%] px-4 py-6">
 	<div class="mb-4 flex flex-wrap items-center justify-between gap-4">
 		<div>
-			<a href="/" class="mb-1 inline-block text-sm text-gray-500 hover:text-gray-800"
+			<a href="/{base}" class="mb-1 inline-block text-sm text-gray-500 hover:text-gray-800"
 				>← 一覧に戻る</a
 			>
 			<h1 class="flex items-center gap-3 text-2xl font-bold text-gray-900">

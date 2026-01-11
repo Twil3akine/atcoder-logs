@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import { base } from '$app/paths';
 
 	export let data: PageData;
 
@@ -151,7 +152,7 @@
 								>
 									{#if problem}
 										<a
-											href="/problems/{problem.id}"
+											href="{base}/problems/{problem.id}"
 											class="flex h-full w-full items-center justify-start px-1 py-1"
 											title={problem.submissionStatus
 												? `${problem.title} - Status: ${problem.submissionStatus}`
