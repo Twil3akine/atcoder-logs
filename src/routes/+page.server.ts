@@ -21,7 +21,7 @@ interface CachedData {
 	submissions: Submission[];
 }
 
-const CACHE_KEY_PREFIX = 'submissions_v1_';
+const CACHE_KEY_PREFIX = 'submissions_v1_1';
 const CACHE_TTL = 60 * 60 * 24 * 7; // 1週間（アクセスがあるたびに延長される）
 
 async function getUserSubmissions(username: string, platform?: App.Platform): Promise<Map<string, string>> {
@@ -40,11 +40,14 @@ async function getUserSubmissions(username: string, platform?: App.Platform): Pr
 				console.log(`Cache hit for ${username}: ${cachedJson.submissions.length} submissions found.`);
 				cachedSubmissions = cachedJson.submissions;
 
-				// 最後に取得した時刻の「1秒後」から新しいデータを取る
-				// (Submissionは時系列とは限らないが、epoch_secondで管理すればOK)
+				// ▼▼▼ 修正箇所: 3日 (259200秒) ほど巻き戻して取得開始する ▼▼▼
 				if (cachedSubmissions.length > 0) {
 					const maxEpoch = Math.max(...cachedSubmissions.map(s => s.epoch_second));
-					fromSecond = maxEpoch + 1;
+
+					// 「最新 + 1秒」ではなく「最新 - 3日」にする
+					// これで直近の抜け漏れや、AtCoder側のジャッジ遅延があっても次回拾える
+					const SAFETY_MARGIN = 60 * 60 * 24 * 3;
+					fromSecond = Math.max(0, maxEpoch - SAFETY_MARGIN);
 				}
 			}
 		} catch (e) {
@@ -176,23 +179,32 @@ export const load: PageServerLoad = async ({ platform }) => {
 			const matchA = a.match(regex);
 			const matchB = b.match(regex);
 
+			// 両方とも "ABC100" や "ARC001" のような形式の場合
 			if (matchA && matchB) {
 				const prefixA = matchA[1].toUpperCase();
 				const prefixB = matchB[1].toUpperCase();
 				const numA = parseInt(matchA[2], 10);
 				const numB = parseInt(matchB[2], 10);
 
+				// プレフィックス(ABC, ARC)が違うならプレフィックス順
 				if (prefixA !== prefixB) {
 					return prefixA.localeCompare(prefixB);
 				}
+				// プレフィックスが同じなら番号の降順（新しい順: 300 -> 1）
 				return numB - numA;
 			}
+
+			// 片方だけ形式に合っている場合は、合っている方(ABC/ARC等)を優先して上に表示
+			if (matchA) return -1;
+			if (matchB) return 1;
+
+			// 両方とも形式外の場合は単純な文字列比較
 			return b.localeCompare(a);
 		});
 
 		return {
 			problemsByContest,
-			sortedContestIds, // Make sure to return this!
+			sortedContestIds,
 			error: null
 		};
 

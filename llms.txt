@@ -1,0 +1,81 @@
+# AtCoder Logs - Project Overview
+
+
+## Project Summary
+
+AtCoder Garden is a personal AtCoder problem management and tracking web application built with SvelteKit, deployed on Cloudflare Pages. It allows users to track their submission status, take notes on problems, and manage their competitive programming progress.
+
+
+## Technology Stack
+
+- **Framework**: SvelteKit 2.49.1 with Svelte 5.45.6
+
+- **Deployment**: Cloudflare Pages with D1 database and KV storage
+
+- **Database**: Cloudflare D1 (SQLite) with Drizzle ORM
+
+- **Styling**: TailwindCSS 4.1.17 with typography and forms plugins
+
+- **Language**: TypeScript 5.9.3
+
+- **Build Tool**: Vite 7.2.6
+
+- **Package Manager**: Bun
+
+
+## Core Features
+
+- **Problem Tracking**: Fetches and displays AtCoder problems with submission status
+
+- **Personal Notes**: Allows users to add notes and solutions for each problem
+
+- **Submission Status**: Integrates with AtCoder API to track AC/WA status
+
+- **Caching**: Uses Cloudflare KV for efficient data caching (7-day TTL)
+
+- **Contest Organization**: Groups problems by contest with intelligent sorting
+
+
+## Database Schema
+
+- **problems**: Stores problem information (id, title, contestId, difficulty)
+
+- **my_notes**: Stores user notes with solution/explanation flags and timestamps
+
+
+## Key Integrations
+
+- **AtCoder API**: Fetches user submissions via kenkoooo.com API
+
+- **Cloudflare D1**: Primary database for problems and notes
+
+- **Cloudflare KV**: Caching layer for submission data
+
+
+## Development Commands
+
+- `npm run dev` - Local development
+
+- `npm run dev:cf` - Cloudflare Pages local development
+
+- `npm run build` - Production build
+
+- `npm run db:push` - Database schema updates
+
+- `npm run seed:local` - Local database seeding
+
+
+## Project Structure
+
+- `/src/routes` - SvelteKit pages and API routes
+
+- `/src/lib/server/db` - Database configuration and schema
+
+- `/drizzle` - Database migration files
+
+- `/scripts` - Database seeding scripts
+
+- `/.github/workflows` - CI/CD configuration
+
+
+The project is designed as a personal tool for competitive programming practice management, with a focus on efficient data handling and clean user experience.

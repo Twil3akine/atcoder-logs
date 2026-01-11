@@ -117,10 +117,30 @@
 							</td>
 							{#each ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H/Ex'] as problemNum}
 								{@const problems = getProblemsForContest(contestId)}
+
 								{@const problem = problems.find((p) => {
 									const num = getProblemNumber(p.id, contestId);
+
+									// H/Ex の特別扱い
 									if (problemNum === 'H/Ex' && (num === 'H' || num === 'EX')) return true;
-									if (problemNum !== 'H/Ex') return num === problemNum;
+
+									// 通常の一致チェック (A=A)
+									if (problemNum !== 'H/Ex' && num === problemNum) return true;
+
+									// 追加: 数字表記（1, 2, 3...）への対応（初期ABC/ARC対策）
+									// 例: columnが'A'のとき、問題ID末尾が'1'なら一致とみなす
+									const numericMap: Record<string, string> = {
+										A: '1',
+										B: '2',
+										C: '3',
+										D: '4',
+										E: '5',
+										F: '6',
+										G: '7',
+										H: '8'
+									};
+									if (numericMap[problemNum] === num) return true;
+
 									return false;
 								})}
 								{@const status = problem ? getProblemStatus(problem) : -1}
