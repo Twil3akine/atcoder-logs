@@ -8,6 +8,7 @@
 
 	export let data: PageData;
 
+	let isAdmin = false;
 	let isEditing = false;
 	let editContent = '';
 
@@ -23,6 +24,7 @@ $$`;
 
 	onMount(() => {
 		editContent = data.note?.content || '';
+		isAdmin = !!localStorage.getItem('admin_key');
 	});
 
 	function renderMarkdown(markdown: string): string {
@@ -49,13 +51,17 @@ $$`;
 	}
 
 	async function saveNote() {
+		const adminKey = localStorage.getItem('admin_key') || '';
+
 		const response = await fetch(`/api/problems/${data.problem.id}/note`, {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+				'x-admin-key': adminKey // 【追加】 ヘッダーにキーを含める
+			},
 			body: JSON.stringify({
 				content: editContent,
-				// 自動で解決済みにせず、現状維持（復習管理用）
-				hasSolution: data.note?.hasSolution || false,
+				hasSolution: data.note?.hasSolution || false, // 解説がある場合は維持
 				hasExplanation: true
 			})
 		});
@@ -93,9 +99,14 @@ $$`;
 
 	async function toggleSolution() {
 		const newStatus = !data.note?.hasSolution;
+		const adminKey = localStorage.getItem('admin_key') || '';
+
 		const response = await fetch(`/api/problems/${data.problem.id}/note`, {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+				'x-admin-key': adminKey
+			},
 			body: JSON.stringify({
 				content: data.note?.content || '',
 				hasSolution: newStatus,
@@ -155,12 +166,14 @@ $$`;
 
 			{#if !isEditing}
 				{#if data.note?.content}
-					<button
-						onclick={() => (isEditing = true)}
-						class="rounded bg-blue-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
-					>
-						解説を編集
-					</button>
+					{#if isAdmin}
+						<button
+							onclick={() => (isEditing = true)}
+							class="rounded bg-blue-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
+						>
+							解説を編集
+						</button>
+					{/if}
 				{/if}
 			{/if}
 		</div>
@@ -249,12 +262,14 @@ $$`;
 			class="flex h-[60vh] flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50"
 		>
 			<p class="mb-6 text-lg text-gray-500">まだ解説がありません</p>
-			<button
-				onclick={() => (isEditing = true)}
-				class="rounded-lg border border-gray-300 bg-white px-8 py-3 text-lg font-medium text-blue-600 shadow-sm transition-colors hover:bg-blue-50"
-			>
-				解説を書く
-			</button>
+			{#if isAdmin}
+				<button
+					onclick={() => (isEditing = true)}
+					class="rounded-lg border border-gray-300 bg-white px-8 py-3 text-lg font-medium text-blue-600 shadow-sm transition-colors hover:bg-blue-50"
+				>
+					解説を書く
+				</button>
+			{/if}
 		</div>
 	{/if}
 </div>
