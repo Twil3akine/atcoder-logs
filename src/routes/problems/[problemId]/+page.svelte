@@ -185,7 +185,7 @@ $$`;
 				</div>
 				<div class="flex-1 overflow-y-auto p-6">
 					<div
-						class="markdown-content prose prose-sm max-w-none prose-slate prose-headings:text-gray-900 prose-pre:bg-gray-50"
+						class="markdown-content prose max-w-none prose-slate prose-headings:text-gray-900 prose-code:text-slate-700 prose-pre:bg-gray-50 prose-pre:text-gray-900"
 					>
 						{#if editContent}
 							{@html previewHtml}
@@ -200,7 +200,9 @@ $$`;
 		</div>
 	{:else if data.note?.content}
 		<div class="min-h-[200px] rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
-			<div class="markdown-content prose max-w-none prose-slate">
+			<div
+				class="markdown-content prose prose-xl max-w-none prose-slate prose-code:text-slate-700 dark:prose-code:text-slate-200"
+			>
 				{@html renderMarkdown(data.note.content)}
 			</div>
 		</div>
