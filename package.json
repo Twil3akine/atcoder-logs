@@ -1,5 +1,5 @@
 {
-	"name": "atcoder-garden",
+	"name": "atcoder-logs",
 	"version": "0.0.1",
 	"devDependencies": {
 		"@eslint/compat": "^1.4.0",
