@@ -124,7 +124,7 @@ $$`;
 <div class="container mx-auto w-full max-w-[95%] px-4 py-6">
 	<div class="mb-4 flex flex-wrap items-center justify-between gap-4">
 		<div>
-			<a href="/{base}" class="mb-1 inline-block text-sm text-gray-500 hover:text-gray-800"
+			<a href={base} class="mb-1 inline-block text-sm text-gray-500 hover:text-gray-800"
 				>← 一覧に戻る</a
 			>
 			<h1 class="flex items-center gap-3 text-2xl font-bold text-gray-900">
