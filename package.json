@@ -48,7 +48,8 @@
 		"db:migrate:remote": "wrangler d1 migrations apply atcoder-db --remote",
 		"db:studio": "drizzle-kit studio",
 		"db:seed": "curl -X POST http://localhost:8788/api/seed",
-		"seed:local": "bun run scripts/seed-local.ts"
+		"seed:local": "bun run scripts/seed-local.ts",
+		"seed:production": "bun run scripts/seed-production.ts"
 	},
 	"type": "module",
 	"dependencies": {
