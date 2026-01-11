@@ -2,10 +2,19 @@ import { getDb } from '$lib/server/db';
 import { myNotes } from '$lib/server/db/schema';
 import { json, error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
+import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({ params, platform, request }) => {
 	try {
+		const clientKey = request.headers.get('x-admin-key');
+		const serverKey = platform?.env?.ADMIN_KEY || env.ADMIN_KEY;
+
+		// キーが設定されているのに一致しない、またはキーがない場合は弾く
+		if (serverKey && clientKey !== serverKey) {
+			throw error(401, '許可されていません');
+		}
+
 		const db = getDb(platform);
 		const problemId = params.problemId;
 
