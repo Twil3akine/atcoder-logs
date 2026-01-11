@@ -54,3 +54,26 @@ export const POST: RequestHandler = async ({ params, platform, request }) => {
 		throw error(500, '保存に失敗しました');
 	}
 };
+
+export const DELETE: RequestHandler = async ({ params, platform }) => {
+	try {
+		const db = getDb(platform);
+		const problemId = params.problemId;
+
+		if (!problemId) {
+			throw error(400, '問題IDが必要です');
+		}
+
+		// 削除実行
+		await db.delete(myNotes).where(eq(myNotes.problemId, problemId));
+
+		return json({ success: true });
+	} catch (err) {
+		// エラーハンドリング
+		if (err instanceof Error && err.message.includes('D1 database binding is not available')) {
+			throw error(503, 'データベースに接続できません');
+		}
+		console.error('Failed to delete note:', err);
+		throw error(500, '削除に失敗しました');
+	}
+};
