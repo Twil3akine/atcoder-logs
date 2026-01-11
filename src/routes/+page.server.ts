@@ -29,6 +29,9 @@ async function getUserSubmissions(username: string, platform?: App.Platform): Pr
 	let cachedSubmissions: Submission[] = [];
 	let fromSecond = 0;
 
+	// APIを叩くかどうかのフラグ (デフォルトはtrue)
+	let shouldFetch = true;
+
 	// 1. キャッシュの読み込み (KVが使える場合)
 	const cache = platform?.env?.ATCODER_CACHE;
 	const cacheKey = `${CACHE_KEY_PREFIX}${username}`;
@@ -39,6 +42,15 @@ async function getUserSubmissions(username: string, platform?: App.Platform): Pr
 			if (cachedJson && cachedJson.submissions) {
 				console.log(`Cache hit for ${username}: ${cachedJson.submissions.length} submissions found.`);
 				cachedSubmissions = cachedJson.submissions;
+
+				// ▼▼▼ 追加: クールダウン判定 (15分以内ならAPI取得をスキップ) ▼▼▼
+				const now = Math.floor(Date.now() / 1000);
+				// 前回の更新から15分 (900秒) 以内ならスキップ
+				if (cachedJson.lastUpdated && (now - cachedJson.lastUpdated < 900)) {
+					console.log('Skipping API fetch (Cache is fresh)');
+					shouldFetch = false;
+				}
+				// ▲▲▲ 追加ここまで ▲▲▲
 
 				// ▼▼▼ 修正箇所: 3日 (259200秒) ほど巻き戻して取得開始する ▼▼▼
 				if (cachedSubmissions.length > 0) {
@@ -57,49 +69,53 @@ async function getUserSubmissions(username: string, platform?: App.Platform): Pr
 
 	// 2. APIから差分（または全件）を取得
 	const newSubmissions: Submission[] = [];
-	let hasMore = true;
-	let loopCount = 0;
-	const MAX_LOOPS = 20;
 
-	console.log(`Fetching submissions from epoch: ${fromSecond}`);
+	// shouldFetch が true のときだけ実行
+	if (shouldFetch) {
+		let hasMore = true;
+		let loopCount = 0;
+		const MAX_LOOPS = 20;
 
-	while (hasMore && loopCount < MAX_LOOPS) {
-		loopCount++;
-		const apiUrl = `https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions?user=${username}&from_second=${fromSecond}`;
+		console.log(`Fetching submissions from epoch: ${fromSecond}`);
 
-		try {
-			const response = await fetch(apiUrl, {
-				headers: {
-					'User-Agent': 'Twil3-AtCoderViewer/1.0 (Bun; +https://atcoder.jp)',
-					'Accept-Encoding': 'gzip',
-					'Accept': 'application/json'
+		while (hasMore && loopCount < MAX_LOOPS) {
+			loopCount++;
+			const apiUrl = `https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions?user=${username}&from_second=${fromSecond}`;
+
+			try {
+				const response = await fetch(apiUrl, {
+					headers: {
+						'User-Agent': 'Twil3-AtCoderViewer/1.0 (Bun; +https://atcoder.jp)',
+						'Accept-Encoding': 'gzip',
+						'Accept': 'application/json'
+					}
+				});
+
+				if (!response.ok) break;
+
+				const chunk: Submission[] = await response.json();
+
+				if (chunk.length === 0) {
+					hasMore = false;
+					break;
 				}
-			});
 
-			if (!response.ok) break;
+				console.log(`Fetched ${chunk.length} new submissions.`);
+				newSubmissions.push(...chunk);
 
-			const chunk: Submission[] = await response.json();
+				// 次のページへ
+				const maxInChunk = Math.max(...chunk.map(s => s.epoch_second));
+				if (maxInChunk >= fromSecond) {
+					fromSecond = maxInChunk + 1;
+				}
 
-			if (chunk.length === 0) {
-				hasMore = false;
+				if (chunk.length < 500) hasMore = false;
+				if (hasMore) await new Promise(r => setTimeout(r, 200));
+
+			} catch (e) {
+				console.error('API Fetch Error:', e);
 				break;
 			}
-
-			console.log(`Fetched ${chunk.length} new submissions.`);
-			newSubmissions.push(...chunk);
-
-			// 次のページへ
-			const maxInChunk = Math.max(...chunk.map(s => s.epoch_second));
-			if (maxInChunk >= fromSecond) {
-				fromSecond = maxInChunk + 1;
-			}
-
-			if (chunk.length < 500) hasMore = false;
-			if (hasMore) await new Promise(r => setTimeout(r, 200));
-
-		} catch (e) {
-			console.error('API Fetch Error:', e);
-			break;
 		}
 	}
 
@@ -115,7 +131,8 @@ async function getUserSubmissions(username: string, platform?: App.Platform): Pr
 	const mergedSubmissions = Array.from(submissionMap.values());
 
 	// 4. 新しいデータがあったらキャッシュを更新
-	if (cache && newSubmissions.length > 0) {
+	// 新しいデータを取ってきた時だけキャッシュを書き換える
+	if (cache && shouldFetch && newSubmissions.length > 0) {
 		const cacheData: CachedData = {
 			lastUpdated: Math.floor(Date.now() / 1000),
 			submissions: mergedSubmissions
