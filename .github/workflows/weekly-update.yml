@@ -26,6 +26,6 @@ jobs:
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          curl -X POST https://your-domain.com/api/seed-weekly \
+          curl -X POST https://atcoder-logs.pages.dev/api/seed-weekly \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json"
