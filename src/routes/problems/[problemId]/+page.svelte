@@ -4,6 +4,7 @@
 	import { marked } from 'marked';
 	import katex from 'katex';
 	import 'katex/dist/katex.css';
+	import { invalidateAll } from '$app/navigation';
 
 	export let data: PageData;
 
@@ -44,7 +45,7 @@ $$`;
 			}
 		});
 
-		return marked(rendered, { breaks: true });
+		return marked(rendered, { breaks: true }) as string;
 	}
 
 	async function saveNote() {
@@ -63,6 +64,30 @@ $$`;
 			window.location.reload();
 		} else {
 			alert('保存に失敗しました');
+		}
+	}
+
+	async function deleteNote() {
+		if (!confirm('本当に解説を削除しますか？\nこの操作は取り消せません。')) {
+			return;
+		}
+
+		try {
+			const response = await fetch(`/api/problems/${data.problem.id}/note`, {
+				method: 'DELETE'
+			});
+
+			if (!response.ok) throw new Error('Failed to delete');
+
+			// 成功したらデータを再取得して表示を更新
+			await invalidateAll();
+
+			// 入力欄をクリアして編集モードを終了
+			editContent = '';
+			isEditing = false;
+		} catch (error) {
+			console.error(error);
+			alert('削除に失敗しました。');
 		}
 	}
 
@@ -156,22 +181,35 @@ $$`;
 					placeholder={placeholderText}
 				></textarea>
 
-				<div class="flex shrink-0 justify-end gap-3 border-t border-gray-200 bg-gray-50 px-4 py-3">
-					<button
-						onclick={() => {
-							isEditing = false;
-							editContent = data.note?.content || '';
-						}}
-						class="rounded px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200"
-					>
-						キャンセル
-					</button>
-					<button
-						onclick={saveNote}
-						class="rounded bg-green-600 px-6 py-2 text-sm font-bold text-white shadow transition-colors hover:bg-green-700"
-					>
-						保存して終了
-					</button>
+				<div class="flex shrink-0 justify-between border-t border-gray-200 bg-gray-50 px-4 py-3">
+					<div>
+						{#if data.note?.content}
+							<button
+								onclick={deleteNote}
+								class="rounded px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
+							>
+								削除
+							</button>
+						{/if}
+					</div>
+
+					<div class="flex gap-3">
+						<button
+							onclick={() => {
+								isEditing = false;
+								editContent = data.note?.content || '';
+							}}
+							class="rounded px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200"
+						>
+							キャンセル
+						</button>
+						<button
+							onclick={saveNote}
+							class="rounded bg-green-600 px-6 py-2 text-sm font-bold text-white shadow transition-colors hover:bg-green-700"
+						>
+							保存して終了
+						</button>
+					</div>
 				</div>
 			</div>
 
@@ -201,7 +239,7 @@ $$`;
 	{:else if data.note?.content}
 		<div class="min-h-[200px] rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
 			<div
-				class="markdown-content prose prose-xl max-w-none prose-slate prose-code:text-slate-700 dark:prose-code:text-slate-200"
+				class="markdown-content prose prose-xl max-w-none prose-slate prose-headings:text-gray-900 prose-code:text-slate-700 prose-pre:bg-gray-50 prose-pre:text-gray-900"
 			>
 				{@html renderMarkdown(data.note.content)}
 			</div>
@@ -232,7 +270,6 @@ $$`;
 		background-color: #f1f5f9;
 	}
 	:global(.markdown-content code) {
-		color: #db2777;
 		background-color: #f1f5f9;
 		padding: 0.2em 0.4em;
 		border-radius: 0.25em;
