@@ -12,6 +12,14 @@ const config = {
 			compatibilityDate: '2024-01-01',
 			compatibilityFlags: ['nodejs_compat']
 		})
+	},
+
+	paths: {
+		base: '/logs'
+	},
+
+	csrf: {
+		checkOrigin: false
 	}
 };
 
