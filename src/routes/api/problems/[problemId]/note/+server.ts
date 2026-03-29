@@ -64,8 +64,15 @@ export const POST: RequestHandler = async ({ params, platform, request }) => {
 	}
 };
 
-export const DELETE: RequestHandler = async ({ params, platform }) => {
-	try {
+export const DELETE: RequestHandler = async ({ params, platform, request}) => {
+  try {
+    const clientKey = request.headers.get('x-admin-key');
+		const serverKey = platform?.env?.ADMIN_KEY || env.ADMIN_KEY;
+    
+		if (serverKey && clientKey !== serverKey) {
+			throw error(401, '許可されていません');
+    }
+		
 		const db = getDb(platform);
 		const problemId = params.problemId;
 
