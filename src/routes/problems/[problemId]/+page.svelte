@@ -178,6 +178,20 @@ $$`;
 			data.note = { ...data.note, hasSolution: newStatus } as any;
 		}
 	}
+
+	$: solutionClass =
+		data.note?.hasSolution && data.note?.hasExplanation
+			? 'border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+			: data.note?.hasSolution
+				? 'border-fuchsia-300 bg-fuchsia-50 text-fuchsia-700 hover:bg-fuchsia-100'
+				: 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50';
+
+	$: checkClass =
+		data.note?.hasSolution && data.note?.hasExplanation
+			? 'border-indigo-500 bg-indigo-500 text-white'
+			: data.note?.hasSolution
+				? 'border-fuchsia-500 bg-fuchsia-500 text-white'
+				: 'border-gray-400 bg-white';
 </script>
 
 <div class="container mx-auto w-full max-w-[95%] px-4 py-6">
@@ -208,17 +222,9 @@ $$`;
 		<div class="flex items-center gap-3">
 			<button
 				onclick={toggleSolution}
-				class="flex items-center gap-2 rounded border px-3 py-1.5 text-sm transition-all {data.note
-					?.hasSolution
-					? 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
-					: 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'}"
+				class="flex items-center gap-2 rounded border px-3 py-1.5 text-sm transition-all {solutionClass}"
 			>
-				<div
-					class="flex h-4 w-4 items-center justify-center rounded border text-xs {data.note
-						?.hasSolution
-						? 'border-green-500 bg-green-500 text-white'
-						: 'border-gray-400 bg-white'}"
-				>
+				<div class="flex h-4 w-4 items-center justify-center rounded border text-xs {checkClass}">
 					{#if data.note?.hasSolution}✓{/if}
 				</div>
 				<span class="font-medium">{data.note?.hasSolution ? '解決済み' : '解決済みにする'}</span>
