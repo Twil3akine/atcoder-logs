@@ -319,7 +319,7 @@ $$`;
 	{:else if data.note?.content}
 		<div class="min-h-[200px] max-w-[70vw] rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
 			<div
-				class="markdown-content prose prose-xl max-w-none prose-slate prose-headings:text-gray-900"
+				class="markdown-content prose max-w-none prose-slate prose-headings:text-gray-900"
 				use:withCopyButton={data.note.content}
 			>
 				{@html renderMarkdown(data.note.content)}
