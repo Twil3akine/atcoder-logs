@@ -2,10 +2,66 @@
 	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
 	import { base } from '$app/paths';
-	import { marked } from 'marked';
 	import katex from 'katex';
 	import 'katex/dist/katex.css';
 	import { invalidateAll } from '$app/navigation';
+
+	import { markedHighlight } from 'marked-highlight';
+	import hljs from 'highlight.js';
+	import 'highlight.js/styles/github-dark.css';
+
+	// 修正後:
+	import { Marked } from 'marked';
+
+	const myMarked = new Marked(
+		markedHighlight({
+			langPrefix: 'hljs language-',
+			highlight(code, lang) {
+				const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+				return hljs.highlight(code, { language }).value;
+			}
+		})
+	);
+
+	// HTMLが描画された後にコピーボタンをDOMに挿入するSvelteアクション
+	function withCopyButton(node: HTMLElement, content: string) {
+		function apply() {
+			const pres = node.querySelectorAll('pre');
+			pres.forEach((pre) => {
+				// 既にラッパーがある場合はスキップ
+				if (pre.parentElement?.classList.contains('code-wrapper')) return;
+
+				// preタグをdivでラップする
+				const wrapper = document.createElement('div');
+				wrapper.className = 'code-wrapper relative group';
+				pre.parentNode?.insertBefore(wrapper, pre);
+				wrapper.appendChild(pre);
+
+				// コピーボタンの生成
+				const btn = document.createElement('button');
+				btn.className =
+					'absolute top-2 right-2 rounded bg-gray-200 px-2 py-1 text-xs text-gray-700 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-gray-300';
+				btn.textContent = 'Copy';
+
+				btn.onclick = async () => {
+					const codeText = pre.querySelector('code')?.textContent || pre.textContent || '';
+					await navigator.clipboard.writeText(codeText);
+					btn.textContent = 'Copied!';
+					setTimeout(() => (btn.textContent = 'Copy'), 2000);
+				};
+
+				wrapper.appendChild(btn);
+			});
+		}
+
+		// 初回描画時と更新時に実行
+		setTimeout(apply, 0);
+		return {
+			update() {
+				setTimeout(apply, 0);
+			}
+		};
+	}
 
 	export let data: PageData;
 
@@ -48,7 +104,7 @@ $$`;
 			}
 		});
 
-		return marked(rendered, { breaks: true }) as string;
+		return myMarked.parse(rendered, { breaks: true }) as string;
 	}
 
 	async function saveNote() {
@@ -240,7 +296,8 @@ $$`;
 				</div>
 				<div class="flex-1 overflow-y-auto p-6">
 					<div
-						class="markdown-content prose max-w-none prose-slate prose-headings:text-gray-900 prose-code:text-slate-700 prose-pre:bg-gray-50 prose-pre:text-gray-900"
+						class="markdown-content prose max-w-none prose-slate prose-headings:text-gray-900"
+						use:withCopyButton={previewHtml}
 					>
 						{#if editContent}
 							{@html previewHtml}
@@ -256,7 +313,8 @@ $$`;
 	{:else if data.note?.content}
 		<div class="min-h-[200px] rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
 			<div
-				class="markdown-content prose prose-xl max-w-none prose-slate prose-headings:text-gray-900 prose-code:text-slate-700 prose-pre:bg-gray-50 prose-pre:text-gray-900"
+				class="markdown-content prose prose-xl max-w-none prose-slate prose-headings:text-gray-900"
+				use:withCopyButton={data.note.content}
 			>
 				{@html renderMarkdown(data.note.content)}
 			</div>
@@ -282,24 +340,34 @@ $$`;
 	:global(.markdown-content) {
 		line-height: 1.8;
 	}
-	:global(.markdown-content pre) {
+
+	/* ▼ コードブロック全体 (黒背景を強制) ▼ */
+	:global(.markdown-content.prose pre) {
 		margin: 1em 0;
 		padding: 1em;
 		border-radius: 0.5em;
-		background-color: #f1f5f9;
+		background-color: #0d1117 !important; /* GitHub Darkの背景色 */
+		color: #c9d1d9 !important; /* GitHub Darkの基本文字色 */
+		overflow-x: auto;
 	}
-	:global(.markdown-content code) {
-		background-color: #f1f5f9;
+
+	/* ▼ コードブロック内のコード (背景色を透明にしてhighlight.jsに任せる) ▼ */
+	:global(.markdown-content.prose pre code.hljs) {
+		background-color: transparent !important;
+		padding: 0;
+		color: inherit;
+	}
+
+	/* ▼ インラインコード (文章中の `code` のみ適用) ▼ */
+	:global(.markdown-content.prose code:not(.hljs)) {
+		background-color: #f1f5f9 !important;
+		color: #db2777 !important; /* 少し目立つピンク系の色 */
 		padding: 0.2em 0.4em;
 		border-radius: 0.25em;
 		font-size: 0.9em;
 		font-weight: 500;
 	}
-	:global(.markdown-content pre code) {
-		color: inherit;
-		background-color: transparent;
-		padding: 0;
-	}
+
 	:global(.markdown-content .katex-display) {
 		margin: 1.5em 0;
 		overflow-x: auto;

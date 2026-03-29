@@ -53,7 +53,9 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"highlight.js": "^11.11.1",
 		"katex": "^0.16.27",
-		"marked": "^17.0.1"
+		"marked": "^17.0.1",
+		"marked-highlight": "^2.2.3"
 	}
 }
