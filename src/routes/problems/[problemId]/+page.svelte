@@ -194,7 +194,7 @@ $$`;
 				: 'border-gray-400 bg-white';
 </script>
 
-<div class="container mx-auto w-full max-w-[95%] px-4 py-6">
+<div class="container mx-auto w-full max-w-5xl px-4 py-6">
 	<div class="mb-4 flex flex-wrap items-center justify-between gap-4">
 		<div>
 			<a href="{base}/" class="mb-1 inline-block text-sm text-gray-500 hover:text-gray-800"
@@ -317,7 +317,7 @@ $$`;
 			</div>
 		</div>
 	{:else if data.note?.content}
-		<div class="min-h-[200px] rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
+		<div class="min-h-[200px] max-w-[70vw] rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
 			<div
 				class="markdown-content prose prose-xl max-w-none prose-slate prose-headings:text-gray-900"
 				use:withCopyButton={data.note.content}
