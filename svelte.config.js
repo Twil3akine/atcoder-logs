@@ -13,15 +13,10 @@ const config = {
 			compatibilityFlags: ['nodejs_compat']
 		}),
 
-		paths: {
-			base: '/logs'
-		},
-
 		csrf: {
 			checkOrigin: false
 		}
-	},
-
+	}
 };
 
 export default config;
