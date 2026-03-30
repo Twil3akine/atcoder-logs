@@ -11,24 +11,33 @@
 	type ProblemType = NonNullable<(typeof data.problemsGrid)[string][string]>;
 
 	function getProblemStatus(problem: ProblemType): number {
-		if (problem.note?.hasExplanation) return 3;
-		if (problem.submissionStatus === 'AC') return 2;
-		if (problem.submissionStatus && problem.submissionStatus !== 'AC') return 1;
-		return 0;
-	}
+    const hasSol = problem.note?.hasSolution;
+    const hasExp = problem.note?.hasExplanation;
 
-	function getStatusClass(status: number): string {
-		switch (status) {
-			case 3:
-				return 'bg-cyan-200 hover:bg-cyan-400';
-			case 2:
-				return 'bg-green-200 hover:bg-green-400';
-			case 1:
-				return 'bg-yellow-200 hover:bg-yellow-400';
-			default:
-				return 'bg-white hover:bg-gray-200';
-		}
-	}
+    if (hasSol && hasExp) return 5; // 両方
+    if (hasSol && !hasExp) return 4; // 解決のみ
+    if (!hasSol && hasExp) return 3; // 解説のみ
+    if (problem.submissionStatus === 'AC') return 2;
+    if (problem.submissionStatus && problem.submissionStatus !== 'AC') return 1;
+    return 0;
+}
+
+function getStatusClass(status: number): string {
+    switch (status) {
+        case 5:
+            return 'bg-indigo-200 hover:bg-indigo-400'; // 解説も解決も
+        case 4:
+            return 'bg-fuchsia-200 hover:bg-fuchsia-400'; // 解決のみ
+        case 3:
+            return 'bg-cyan-200 hover:bg-cyan-400'; // 解説のみ
+        case 2:
+            return 'bg-green-200 hover:bg-green-400';
+        case 1:
+            return 'bg-yellow-200 hover:bg-yellow-400';
+        default:
+            return 'bg-gray-100 hover:bg-gray-200';
+    }
+}
 
 	type ContestType = 'ABC' | 'ARC' | 'AGC' | 'AHC' | 'Other';
 	let selectedType: ContestType = 'ABC';

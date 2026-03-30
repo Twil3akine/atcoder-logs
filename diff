@@ -1,230 +1,371 @@
-diff --git a/bun.lock b/bun.lock
-index 2c5e791..2144ffd 100644
---- a/bun.lock
-+++ b/bun.lock
-@@ -5,8 +5,10 @@
-     "": {
-       "name": "atcoder-garden",
-       "dependencies": {
-+        "highlight.js": "^11.11.1",
-         "katex": "^0.16.27",
-         "marked": "^17.0.1",
-+        "marked-highlight": "^2.2.3",
-       },
-       "devDependencies": {
-         "@eslint/compat": "^1.4.0",
-@@ -490,6 +492,8 @@
+diff --git a/.gitignore b/.gitignore
+index 171f629..106aff6 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -24,3 +24,5 @@ vite.config.ts.timestamp-*
  
-     "has-flag": ["has-flag@4.0.0", "", {}, "sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ=="],
+ # SQLite
+ *.db
++
++diff
+\ No newline at end of file
+diff --git a/src/routes/+page.server.ts b/src/routes/+page.server.ts
+index e881691..a2be6ff 100644
+--- a/src/routes/+page.server.ts
++++ b/src/routes/+page.server.ts
+@@ -24,7 +24,10 @@ interface CachedData {
+ const CACHE_KEY_PREFIX = 'submissions_v1_1';
+ const CACHE_TTL = 60 * 60 * 24 * 7; // 1週間（アクセスがあるたびに延長される）
  
-+    "highlight.js": ["highlight.js@11.11.1", "", {}, "sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w=="],
-+
-     "ieee754": ["ieee754@1.2.1", "", {}, "sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA=="],
+-async function getUserSubmissions(username: string, platform?: App.Platform): Promise<Map<string, string>> {
++async function getUserSubmissions(
++	username: string,
++	platform?: App.Platform
++): Promise<Map<string, string>> {
+ 	const statusMap = new Map<string, string>();
+ 	let cachedSubmissions: Submission[] = [];
+ 	let fromSecond = 0;
+@@ -38,15 +41,17 @@ async function getUserSubmissions(username: string, platform?: App.Platform): Pr
  
-     "ignore": ["ignore@5.3.2", "", {}, "sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g=="],
-@@ -568,6 +572,8 @@
+ 	if (cache) {
+ 		try {
+-			const cachedJson = await cache.get(cacheKey, 'json') as CachedData | null;
++			const cachedJson = (await cache.get(cacheKey, 'json')) as CachedData | null;
+ 			if (cachedJson && cachedJson.submissions) {
+-				console.log(`Cache hit for ${username}: ${cachedJson.submissions.length} submissions found.`);
++				console.log(
++					`Cache hit for ${username}: ${cachedJson.submissions.length} submissions found.`
++				);
+ 				cachedSubmissions = cachedJson.submissions;
  
-     "marked": ["marked@17.0.1", "", { "bin": { "marked": "bin/marked.js" } }, "sha512-boeBdiS0ghpWcSwoNm/jJBwdpFaMnZWRzjA6SkUMYb40SVaN1x7mmfGKp0jvexGcx+7y2La5zRZsYFZI6Qpypg=="],
+ 				// ▼▼▼ 追加: クールダウン判定 (15分以内ならAPI取得をスキップ) ▼▼▼
+ 				const now = Math.floor(Date.now() / 1000);
+ 				// 前回の更新から15分 (900秒) 以内ならスキップ
+-				if (cachedJson.lastUpdated && (now - cachedJson.lastUpdated < 900)) {
++				if (cachedJson.lastUpdated && now - cachedJson.lastUpdated < 900) {
+ 					console.log('Skipping API fetch (Cache is fresh)');
+ 					shouldFetch = false;
+ 				}
+@@ -54,7 +59,7 @@ async function getUserSubmissions(username: string, platform?: App.Platform): Pr
  
-+    "marked-highlight": ["marked-highlight@2.2.3", "", { "peerDependencies": { "marked": ">=4 <18" } }, "sha512-FCfZRxW/msZAiasCML4isYpxyQWKEEx44vOgdn5Kloae+Qc3q4XR7WjpKKf8oMLk7JP9ZCRd2vhtclJFdwxlWQ=="],
-+
-     "mime": ["mime@3.0.0", "", { "bin": { "mime": "cli.js" } }, "sha512-jSCU7/VB1loIWBZe14aEYHU/+1UMEHoaO7qxCOVJOw9GgH72VAWppxNcjU+x9a2k3GSIBXNKxXQFqRvvZ7vr3A=="],
+ 				// ▼▼▼ 修正箇所: 3日 (259200秒) ほど巻き戻して取得開始する ▼▼▼
+ 				if (cachedSubmissions.length > 0) {
+-					const maxEpoch = Math.max(...cachedSubmissions.map(s => s.epoch_second));
++					const maxEpoch = Math.max(...cachedSubmissions.map((s) => s.epoch_second));
  
-     "mimic-response": ["mimic-response@3.1.0", "", {}, "sha512-z0yWI+4FDrrweS8Zmt4Ej5HdJmky15+L2e6Wgn3+iK5fWzb6T3fhNFq2+MeTRb064c6Wr4N/wv0DzQTjNzHNGQ=="],
-diff --git a/package.json b/package.json
-index abce7e6..e6ba216 100644
---- a/package.json
-+++ b/package.json
-@@ -53,7 +53,9 @@
- 	},
- 	"type": "module",
- 	"dependencies": {
-+		"highlight.js": "^11.11.1",
- 		"katex": "^0.16.27",
--		"marked": "^17.0.1"
-+		"marked": "^17.0.1",
-+		"marked-highlight": "^2.2.3"
- 	}
- }
-diff --git a/src/routes/problems/[problemId]/+page.svelte b/src/routes/problems/[problemId]/+page.svelte
-index 096e5f6..03700fe 100644
---- a/src/routes/problems/[problemId]/+page.svelte
-+++ b/src/routes/problems/[problemId]/+page.svelte
-@@ -2,11 +2,67 @@
- 	import { onMount } from 'svelte';
- 	import type { PageData } from './$types';
- 	import { base } from '$app/paths';
--	import { marked } from 'marked';
- 	import katex from 'katex';
- 	import 'katex/dist/katex.css';
- 	import { invalidateAll } from '$app/navigation';
+ 					// 「最新 + 1秒」ではなく「最新 - 3日」にする
+ 					// これで直近の抜け漏れや、AtCoder側のジャッジ遅延があっても次回拾える
+@@ -87,7 +92,7 @@ async function getUserSubmissions(username: string, platform?: App.Platform): Pr
+ 					headers: {
+ 						'User-Agent': 'Twil3-AtCoderViewer/1.0 (Bun; +https://atcoder.jp)',
+ 						'Accept-Encoding': 'gzip',
+-						'Accept': 'application/json'
++						Accept: 'application/json'
+ 					}
+ 				});
  
-+	import { markedHighlight } from 'marked-highlight';
-+	import hljs from 'highlight.js';
-+	import 'highlight.js/styles/github-dark.css';
-+
-+	// 修正後:
-+	import { Marked } from 'marked';
-+
-+	const myMarked = new Marked(
-+		markedHighlight({
-+			langPrefix: 'hljs language-',
-+			highlight(code, lang) {
-+				const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-+				return hljs.highlight(code, { language }).value;
-+			}
-+		})
-+	);
-+
-+	// HTMLが描画された後にコピーボタンをDOMに挿入するSvelteアクション
-+	function withCopyButton(node: HTMLElement, content: string) {
-+		function apply() {
-+			const pres = node.querySelectorAll('pre');
-+			pres.forEach((pre) => {
-+				// 既にラッパーがある場合はスキップ
-+				if (pre.parentElement?.classList.contains('code-wrapper')) return;
-+
-+				// preタグをdivでラップする
-+				const wrapper = document.createElement('div');
-+				wrapper.className = 'code-wrapper relative group';
-+				pre.parentNode?.insertBefore(wrapper, pre);
-+				wrapper.appendChild(pre);
-+
-+				// コピーボタンの生成
-+				const btn = document.createElement('button');
-+				btn.className =
-+					'absolute top-2 right-2 rounded bg-gray-200 px-2 py-1 text-xs text-gray-700 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-gray-300';
-+				btn.textContent = 'Copy';
-+
-+				btn.onclick = async () => {
-+					const codeText = pre.querySelector('code')?.textContent || pre.textContent || '';
-+					await navigator.clipboard.writeText(codeText);
-+					btn.textContent = 'Copied!';
-+					setTimeout(() => (btn.textContent = 'Copy'), 2000);
-+				};
-+
-+				wrapper.appendChild(btn);
-+			});
-+		}
-+
-+		// 初回描画時と更新時に実行
-+		setTimeout(apply, 0);
-+		return {
-+			update() {
-+				setTimeout(apply, 0);
-+			}
-+		};
-+	}
-+
- 	export let data: PageData;
+@@ -104,14 +109,13 @@ async function getUserSubmissions(username: string, platform?: App.Platform): Pr
+ 				newSubmissions.push(...chunk);
  
- 	let isAdmin = false;
-@@ -48,7 +104,7 @@ $$`;
- 			}
+ 				// 次のページへ
+-				const maxInChunk = Math.max(...chunk.map(s => s.epoch_second));
++				const maxInChunk = Math.max(...chunk.map((s) => s.epoch_second));
+ 				if (maxInChunk >= fromSecond) {
+ 					fromSecond = maxInChunk + 1;
+ 				}
+ 
+ 				if (chunk.length < 500) hasMore = false;
+-				if (hasMore) await new Promise(r => setTimeout(r, 200));
+-
++				if (hasMore) await new Promise((r) => setTimeout(r, 200));
+ 			} catch (e) {
+ 				console.error('API Fetch Error:', e);
+ 				break;
+@@ -124,9 +128,9 @@ async function getUserSubmissions(username: string, platform?: App.Platform): Pr
+ 	const submissionMap = new Map<number, Submission>();
+ 
+ 	// 古いデータをセット
+-	cachedSubmissions.forEach(s => submissionMap.set(s.id, s));
++	cachedSubmissions.forEach((s) => submissionMap.set(s.id, s));
+ 	// 新しいデータをセット（更新があれば上書きされる）
+-	newSubmissions.forEach(s => submissionMap.set(s.id, s));
++	newSubmissions.forEach((s) => submissionMap.set(s.id, s));
+ 
+ 	const mergedSubmissions = Array.from(submissionMap.values());
+ 
+@@ -178,53 +182,73 @@ export const load: PageServerLoad = async ({ platform }) => {
+ 			};
  		});
  
--		return marked(rendered, { breaks: true }) as string;
-+		return myMarked.parse(rendered, { breaks: true }) as string;
+-		// Use a proper type for the accumulator
+-		const problemsByContest = problemsWithNotes.reduce(
+-			(acc, problem) => {
+-				const contestId = problem.contestId;
+-				if (!acc[contestId]) {
+-					acc[contestId] = [];
+-				}
+-				acc[contestId].push(problem);
+-				return acc;
+-			},
+-			{} as Record<string, typeof problemsWithNotes>
+-		);
++		// サーバー側で問題をカラムごとに割り当てた2次元辞書を作る
++		const problemsGrid: Record<string, Record<string, (typeof problemsWithNotes)[0]>> = {};
++
++		for (const problem of problemsWithNotes) {
++			const contestId = problem.contestId;
++			if (!problemsGrid[contestId]) {
++				problemsGrid[contestId] = {};
++			}
++
++			// どの列(A, B, C...)に入るか判定
++			const prefix = contestId.toLowerCase() + '_';
++			let numStr = '';
++			if (problem.id.toLowerCase().startsWith(prefix)) {
++				numStr = problem.id.slice(prefix.length).toUpperCase();
++			} else {
++				const parts = problem.id.split('_');
++				numStr = parts[parts.length - 1].toUpperCase();
++			}
+ 
+-		const sortedContestIds = Object.keys(problemsByContest).sort((a, b) => {
++			// 数字表記（1, 2, 3...）をアルファベットに変換
++			const numericMap: Record<string, string> = {
++				'1': 'A',
++				'2': 'B',
++				'3': 'C',
++				'4': 'D',
++				'5': 'E',
++				'6': 'F',
++				'7': 'G',
++				'8': 'H'
++			};
++			let col = numericMap[numStr] || numStr;
++
++			// EXはH列として扱う
++			if (col === 'EX') col = 'H';
++
++			problemsGrid[contestId][col] = problem;
++		}
++
++		// problemsByContestではなくproblemsGridのキーを使ってソートする
++		const sortedContestIds = Object.keys(problemsGrid).sort((a, b) => {
+ 			const regex = /^([a-zA-Z]+)(\d+)$/;
+ 			const matchA = a.match(regex);
+ 			const matchB = b.match(regex);
+ 
+-			// 両方とも "ABC100" や "ARC001" のような形式の場合
+ 			if (matchA && matchB) {
+ 				const prefixA = matchA[1].toUpperCase();
+ 				const prefixB = matchB[1].toUpperCase();
+ 				const numA = parseInt(matchA[2], 10);
+ 				const numB = parseInt(matchB[2], 10);
+ 
+-				// プレフィックス(ABC, ARC)が違うならプレフィックス順
+ 				if (prefixA !== prefixB) {
+ 					return prefixA.localeCompare(prefixB);
+ 				}
+-				// プレフィックスが同じなら番号の降順（新しい順: 300 -> 1）
+ 				return numB - numA;
+ 			}
+ 
+-			// 片方だけ形式に合っている場合は、合っている方(ABC/ARC等)を優先して上に表示
+ 			if (matchA) return -1;
+ 			if (matchB) return 1;
+ 
+-			// 両方とも形式外の場合は単純な文字列比較
+ 			return b.localeCompare(a);
+ 		});
+ 
+ 		return {
+-			problemsByContest,
++			problemsGrid, // problemsByContestをproblemsGridに変更
+ 			sortedContestIds,
+ 			error: null
+ 		};
+-
+ 	} catch (err) {
+ 		console.error('Database or API Error:', err);
+ 		return {
+@@ -233,4 +257,4 @@ export const load: PageServerLoad = async ({ platform }) => {
+ 			error: 'データの取得中にエラーが発生しました。'
+ 		};
  	}
+-};
+\ No newline at end of file
++};
+diff --git a/src/routes/+page.svelte b/src/routes/+page.svelte
+index 8951635..ff2bed9 100644
+--- a/src/routes/+page.svelte
++++ b/src/routes/+page.svelte
+@@ -4,36 +4,14 @@
  
- 	async function saveNote() {
-@@ -230,7 +286,7 @@ $$`;
- 				</div>
- 			</div>
+ 	export let data: PageData;
  
--			<div
-+			<di
- 				class="flex h-full flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg"
+-	// Use the sorted IDs from the server
++	// サーバーから渡されたソート済みIDを使用
+ 	$: contestIds = data.sortedContestIds || [];
+ 
+-	// 1. Fix the type issue by asserting the type or checking existence
+-	function getProblemsForContest(contestId: string) {
+-		// Safe access: if data.problemsByContest is null/undefined or empty, return []
+-		if (!data.problemsByContest) return [];
+-		return data.problemsByContest[contestId] || [];
+-	}
+-
+-	function getProblemNumber(problemId: string, contestId: string): string {
+-		const prefix = contestId.toLowerCase() + '_';
+-		if (problemId.toLowerCase().startsWith(prefix)) {
+-			return problemId.slice(prefix.length).toUpperCase();
+-		}
+-		const parts = problemId.split('_');
+-		return parts[parts.length - 1].toUpperCase();
+-	}
+-
+-	// Fix the type for the problem argument based on your data structure
+-	// We can infer it from the return type of getProblemsForContest
+-	type ProblemType = ReturnType<typeof getProblemsForContest>[number];
++	// problemsGridの型定義（data.problemsGridが存在する前提）
++	type ProblemType = NonNullable<(typeof data.problemsGrid)[string][string]>;
+ 
+ 	function getProblemStatus(problem: ProblemType): number {
+-		const hasSol = problem.note?.hasSolution;
+-		const hasExp = problem.note?.hasExplanation;
+-
+-		if (hasSol && hasExp) return 5; // 両方
+-		if (hasSol && !hasExp) return 4; // 解決のみ
+-		if (!hasSol && hasExp) return 3; // 解説のみ
++		if (problem.note?.hasExplanation) return 3;
+ 		if (problem.submissionStatus === 'AC') return 2;
+ 		if (problem.submissionStatus && problem.submissionStatus !== 'AC') return 1;
+ 		return 0;
+@@ -41,12 +19,8 @@
+ 
+ 	function getStatusClass(status: number): string {
+ 		switch (status) {
+-			case 5:
+-				return 'bg-indigo-200 hover:bg-indigo-400'; // 解説も解決も
+-			case 4:
+-				return 'bg-fuchsia-200 hover:bg-fuchsia-400'; // 解決のみ
+ 			case 3:
+-				return 'bg-cyan-200 hover:bg-cyan-400'; // 解説のみ
++				return 'bg-cyan-200 hover:bg-cyan-400';
+ 			case 2:
+ 				return 'bg-green-200 hover:bg-green-400';
+ 			case 1:
+@@ -126,34 +100,11 @@
+ 								{contestId.toUpperCase()}
+ 							</td>
+ 							{#each ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H/Ex'] as problemNum}
+-								{@const problems = getProblemsForContest(contestId)}
++								{@const colKey = problemNum === 'H/Ex' ? 'H' : problemNum}
+ 
+-								{@const problem = problems.find((p) => {
+-									const num = getProblemNumber(p.id, contestId);
+-
+-									// H/Ex の特別扱い
+-									if (problemNum === 'H/Ex' && (num === 'H' || num === 'EX')) return true;
+-
+-									// 通常の一致チェック (A=A)
+-									if (problemNum !== 'H/Ex' && num === problemNum) return true;
+-
+-									// 追加: 数字表記（1, 2, 3...）への対応（初期ABC/ARC対策）
+-									// 例: columnが'A'のとき、問題ID末尾が'1'なら一致とみなす
+-									const numericMap: Record<string, string> = {
+-										A: '1',
+-										B: '2',
+-										C: '3',
+-										D: '4',
+-										E: '5',
+-										F: '6',
+-										G: '7',
+-										H: '8'
+-									};
+-									if (numericMap[problemNum] === num) return true;
+-
+-									return false;
+-								})}
++								{@const problem = data.problemsGrid?.[contestId]?.[colKey]}
+ 								{@const status = problem ? getProblemStatus(problem) : -1}
++
+ 								<td
+ 									class="h-12 max-w-[60px] min-w-[60px] overflow-hidden border border-gray-300 px-1 py-1 text-center transition-colors {getStatusClass(
+ 										status
+diff --git a/src/routes/problems/[problemId]/+page.svelte b/src/routes/problems/[problemId]/+page.svelte
+index e098a8e..0451b81 100644
+--- a/src/routes/problems/[problemId]/+page.svelte
++++ b/src/routes/problems/[problemId]/+page.svelte
+@@ -7,10 +7,14 @@
+ 	import { invalidateAll } from '$app/navigation';
+ 
+ 	import { markedHighlight } from 'marked-highlight';
+-	import hljs from 'highlight.js';
++	import hljs from 'highlight.js/lib/core';
++	import python from 'highlight.js/lib/languages/python';
++	import rust from 'highlight.js/lib/languages/rust';
+ 	import 'highlight.js/styles/github-dark.css';
++	
++	hljs.registerLanguage('rust', rust);
++	hljs.registerLanguage('python', python);
+ 
+-	// 修正後:
+ 	import { Marked } from 'marked';
+ 
+ 	const myMarked = new Marked(
+@@ -178,23 +182,9 @@ $$`;
+ 			data.note = { ...data.note, hasSolution: newStatus } as any;
+ 		}
+ 	}
+-
+-	$: solutionClass =
+-		data.note?.hasSolution && data.note?.hasExplanation
+-			? 'border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+-			: data.note?.hasSolution
+-				? 'border-fuchsia-300 bg-fuchsia-50 text-fuchsia-700 hover:bg-fuchsia-100'
+-				: 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50';
+-
+-	$: checkClass =
+-		data.note?.hasSolution && data.note?.hasExplanation
+-			? 'border-indigo-500 bg-indigo-500 text-white'
+-			: data.note?.hasSolution
+-				? 'border-fuchsia-500 bg-fuchsia-500 text-white'
+-				: 'border-gray-400 bg-white';
+ </script>
+ 
+-<div class="container mx-auto w-full max-w-5xl px-4 py-6">
++<div class="container mx-auto w-full max-w-[95%] px-4 py-6">
+ 	<div class="mb-4 flex flex-wrap items-center justify-between gap-4">
+ 		<div>
+ 			<a href="{base}/" class="mb-1 inline-block text-sm text-gray-500 hover:text-gray-800"
+@@ -222,9 +212,17 @@ $$`;
+ 		<div class="flex items-center gap-3">
+ 			<button
+ 				onclick={toggleSolution}
+-				class="flex items-center gap-2 rounded border px-3 py-1.5 text-sm transition-all {solutionClass}"
++				class="flex items-center gap-2 rounded border px-3 py-1.5 text-sm transition-all {data.note
++					?.hasSolution
++					? 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
++					: 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'}"
  			>
- 				<div
-@@ -240,7 +296,8 @@ $$`;
+-				<div class="flex h-4 w-4 items-center justify-center rounded border text-xs {checkClass}">
++				<div
++					class="flex h-4 w-4 items-center justify-center rounded border text-xs {data.note
++						?.hasSolution
++						? 'border-green-500 bg-green-500 text-white'
++						: 'border-gray-400 bg-white'}"
++				>
+ 					{#if data.note?.hasSolution}✓{/if}
  				</div>
- 				<div class="flex-1 overflow-y-auto p-6">
- 					<div
--						class="markdown-content prose max-w-none prose-slate prose-headings:text-gray-900 prose-code:text-slate-700 prose-pre:bg-gray-50 prose-pre:text-gray-900"
-+						class="markdown-content prose max-w-none prose-slate prose-headings:text-gray-900"
-+						use:withCopyButton={previewHtml}
- 					>
- 						{#if editContent}
- 							{@html previewHtml}
-@@ -251,12 +308,13 @@ $$`;
- 						{/if}
- 					</div>
- 				</div>
--			</div>
-+			</di>
+ 				<span class="font-medium">{data.note?.hasSolution ? '解決済み' : '解決済みにする'}</span>
+@@ -317,9 +315,9 @@ $$`;
+ 			</div>
  		</div>
  	{:else if data.note?.content}
- 		<div class="min-h-[200px] rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
+-		<div class="min-h-[200px] max-w-[70vw] rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
++		<div class="min-h-[200px] rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
  			<div
--				class="markdown-content prose prose-xl max-w-none prose-slate prose-headings:text-gray-900 prose-code:text-slate-700 prose-pre:bg-gray-50 prose-pre:text-gray-900"
+-				class="markdown-content prose max-w-none prose-slate prose-headings:text-gray-900"
 +				class="markdown-content prose prose-xl max-w-none prose-slate prose-headings:text-gray-900"
-+				use:withCopyButton={data.note.content}
+ 				use:withCopyButton={data.note.content}
  			>
  				{@html renderMarkdown(data.note.content)}
- 			</div>
-@@ -282,24 +340,34 @@ $$`;
- 	:global(.markdown-content) {
- 		line-height: 1.8;
- 	}
--	:global(.markdown-content pre) {
-+
-+	/* ▼ コードブロック全体 (黒背景を強制) ▼ */
-+	:global(.markdown-content.prose pre) {
- 		margin: 1em 0;
- 		padding: 1em;
- 		border-radius: 0.5em;
--		background-color: #f1f5f9;
-+		background-color: #0d1117 !important; /* GitHub Darkの背景色 */
-+		color: #c9d1d9 !important; /* GitHub Darkの基本文字色 */
-+		overflow-x: auto;
- 	}
--	:global(.markdown-content code) {
--		background-color: #f1f5f9;
-+
-+	/* ▼ コードブロック内のコード (背景色を透明にしてhighlight.jsに任せる) ▼ */
-+	:global(.markdown-content.prose pre code.hljs) {
-+		background-color: transparent !important;
-+		padding: 0;
-+		color: inherit;
-+	}
-+
-+	/* ▼ インラインコード (文章中の `code` のみ適用) ▼ */
-+	:global(.markdown-content.prose code:not(.hljs)) {
-+		background-color: #f1f5f9 !important;
-+		color: #db2777 !important; /* 少し目立つピンク系の色 */
- 		padding: 0.2em 0.4em;
- 		border-radius: 0.25em;
- 		font-size: 0.9em;
- 		font-weight: 500;
- 	}
--	:global(.markdown-content pre code) {
--		color: inherit;
--		background-color: transparent;
--		padding: 0;
--	}
-+
- 	:global(.markdown-content .katex-display) {
- 		margin: 1.5em 0;
- 		overflow-x: auto;
-diff --git a/svelte.config.js b/svelte.config.js
-index 9b5fb19..e2cd29c 100644
---- a/svelte.config.js
-+++ b/svelte.config.js
-@@ -13,15 +13,10 @@ const config = {
- 			compatibilityFlags: ['nodejs_compat']
- 		}),
- 
--		paths: {
--			base: '/logs'
--		},
--
- 		csrf: {
- 			checkOrigin: false
- 		}
--	},
--
-+	}
- };
- 
- export default config;
