@@ -4,36 +4,14 @@
 
 	export let data: PageData;
 
-	// Use the sorted IDs from the server
+	// サーバーから渡されたソート済みIDを使用
 	$: contestIds = data.sortedContestIds || [];
 
-	// 1. Fix the type issue by asserting the type or checking existence
-	function getProblemsForContest(contestId: string) {
-		// Safe access: if data.problemsByContest is null/undefined or empty, return []
-		if (!data.problemsByContest) return [];
-		return data.problemsByContest[contestId] || [];
-	}
-
-	function getProblemNumber(problemId: string, contestId: string): string {
-		const prefix = contestId.toLowerCase() + '_';
-		if (problemId.toLowerCase().startsWith(prefix)) {
-			return problemId.slice(prefix.length).toUpperCase();
-		}
-		const parts = problemId.split('_');
-		return parts[parts.length - 1].toUpperCase();
-	}
-
-	// Fix the type for the problem argument based on your data structure
-	// We can infer it from the return type of getProblemsForContest
-	type ProblemType = ReturnType<typeof getProblemsForContest>[number];
+	// problemsGridの型定義（data.problemsGridが存在する前提）
+	type ProblemType = NonNullable<(typeof data.problemsGrid)[string][string]>;
 
 	function getProblemStatus(problem: ProblemType): number {
-		const hasSol = problem.note?.hasSolution;
-		const hasExp = problem.note?.hasExplanation;
-
-		if (hasSol && hasExp) return 5; // 両方
-		if (hasSol && !hasExp) return 4; // 解決のみ
-		if (!hasSol && hasExp) return 3; // 解説のみ
+		if (problem.note?.hasExplanation) return 3;
 		if (problem.submissionStatus === 'AC') return 2;
 		if (problem.submissionStatus && problem.submissionStatus !== 'AC') return 1;
 		return 0;
@@ -41,12 +19,8 @@
 
 	function getStatusClass(status: number): string {
 		switch (status) {
-			case 5:
-				return 'bg-indigo-200 hover:bg-indigo-400'; // 解説も解決も
-			case 4:
-				return 'bg-fuchsia-200 hover:bg-fuchsia-400'; // 解決のみ
 			case 3:
-				return 'bg-cyan-200 hover:bg-cyan-400'; // 解説のみ
+				return 'bg-cyan-200 hover:bg-cyan-400';
 			case 2:
 				return 'bg-green-200 hover:bg-green-400';
 			case 1:
@@ -126,34 +100,11 @@
 								{contestId.toUpperCase()}
 							</td>
 							{#each ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H/Ex'] as problemNum}
-								{@const problems = getProblemsForContest(contestId)}
+								{@const colKey = problemNum === 'H/Ex' ? 'H' : problemNum}
 
-								{@const problem = problems.find((p) => {
-									const num = getProblemNumber(p.id, contestId);
-
-									// H/Ex の特別扱い
-									if (problemNum === 'H/Ex' && (num === 'H' || num === 'EX')) return true;
-
-									// 通常の一致チェック (A=A)
-									if (problemNum !== 'H/Ex' && num === problemNum) return true;
-
-									// 追加: 数字表記（1, 2, 3...）への対応（初期ABC/ARC対策）
-									// 例: columnが'A'のとき、問題ID末尾が'1'なら一致とみなす
-									const numericMap: Record<string, string> = {
-										A: '1',
-										B: '2',
-										C: '3',
-										D: '4',
-										E: '5',
-										F: '6',
-										G: '7',
-										H: '8'
-									};
-									if (numericMap[problemNum] === num) return true;
-
-									return false;
-								})}
+								{@const problem = data.problemsGrid?.[contestId]?.[colKey]}
 								{@const status = problem ? getProblemStatus(problem) : -1}
+
 								<td
 									class="h-12 max-w-[60px] min-w-[60px] overflow-hidden border border-gray-300 px-1 py-1 text-center transition-colors {getStatusClass(
 										status
