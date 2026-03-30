@@ -7,10 +7,14 @@
 	import { invalidateAll } from '$app/navigation';
 
 	import { markedHighlight } from 'marked-highlight';
-	import hljs from 'highlight.js';
+	import hljs from 'highlight.js/lib/core';
+	import python from 'highlight.js/lib/languages/python';
+	import rust from 'highlight.js/lib/languages/rust';
 	import 'highlight.js/styles/github-dark.css';
+	
+	hljs.registerLanguage('rust', rust);
+	hljs.registerLanguage('python', python);
 
-	// 修正後:
 	import { Marked } from 'marked';
 
 	const myMarked = new Marked(
@@ -178,23 +182,9 @@ $$`;
 			data.note = { ...data.note, hasSolution: newStatus } as any;
 		}
 	}
-
-	$: solutionClass =
-		data.note?.hasSolution && data.note?.hasExplanation
-			? 'border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-			: data.note?.hasSolution
-				? 'border-fuchsia-300 bg-fuchsia-50 text-fuchsia-700 hover:bg-fuchsia-100'
-				: 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50';
-
-	$: checkClass =
-		data.note?.hasSolution && data.note?.hasExplanation
-			? 'border-indigo-500 bg-indigo-500 text-white'
-			: data.note?.hasSolution
-				? 'border-fuchsia-500 bg-fuchsia-500 text-white'
-				: 'border-gray-400 bg-white';
 </script>
 
-<div class="container mx-auto w-full max-w-5xl px-4 py-6">
+<div class="container mx-auto w-full max-w-[95%] px-4 py-6">
 	<div class="mb-4 flex flex-wrap items-center justify-between gap-4">
 		<div>
 			<a href="{base}/" class="mb-1 inline-block text-sm text-gray-500 hover:text-gray-800"
@@ -222,9 +212,17 @@ $$`;
 		<div class="flex items-center gap-3">
 			<button
 				onclick={toggleSolution}
-				class="flex items-center gap-2 rounded border px-3 py-1.5 text-sm transition-all {solutionClass}"
+				class="flex items-center gap-2 rounded border px-3 py-1.5 text-sm transition-all {data.note
+					?.hasSolution
+					? 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
+					: 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'}"
 			>
-				<div class="flex h-4 w-4 items-center justify-center rounded border text-xs {checkClass}">
+				<div
+					class="flex h-4 w-4 items-center justify-center rounded border text-xs {data.note
+						?.hasSolution
+						? 'border-green-500 bg-green-500 text-white'
+						: 'border-gray-400 bg-white'}"
+				>
 					{#if data.note?.hasSolution}✓{/if}
 				</div>
 				<span class="font-medium">{data.note?.hasSolution ? '解決済み' : '解決済みにする'}</span>
@@ -317,9 +315,9 @@ $$`;
 			</div>
 		</div>
 	{:else if data.note?.content}
-		<div class="min-h-[200px] max-w-[70vw] rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
+		<div class="min-h-[200px] rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
 			<div
-				class="markdown-content prose max-w-none prose-slate prose-headings:text-gray-900"
+				class="markdown-content prose prose-xl max-w-none prose-slate prose-headings:text-gray-900"
 				use:withCopyButton={data.note.content}
 			>
 				{@html renderMarkdown(data.note.content)}
